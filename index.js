@@ -49,12 +49,6 @@ async function run() {
       res.send(result);
     })
 
-    app.get('/tasks/:id', async (req, res) => {
-      const id = req.params.id;
-      const filter = { _id: new ObjectId(id) };
-      try {const result = await TaskCollection.findOne(filter);
-        res.send(result);} catch (err) {res.status(500).send({ error: err.message });}
-    });
 
     app.get('/users/:email', async (req, res) => {
       const email = req.params.email;
@@ -83,17 +77,48 @@ async function run() {
         return res.status(500).json({ error: 'Internal server error' });}
     });
 
+
     app.get('/tasks', async (req, res) => {
       const email = req.query.email;
       const query = { createemail: email };
       const result = await TaskCollection.find(query).toArray();
       res.send(result);
     });
-    app.get('/tasks', async (req, res) => {
-      const email = req.query.email;
-      const query = { createemail: email };
-      const result = await TaskCollection.find(query).toArray();
-      res.send(result);
+
+    app.get('/tasks/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      try {const result = await TaskCollection.findOne(filter);
+        res.send(result);} catch (err) {res.status(500).send({ error: err.message });}
+    });
+
+    app.patch('/tasks/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+    
+      try {
+        const existingTask = await TaskCollection.findOne(filter);
+    
+        if (!existingTask) {
+          return res.status(404).send({ error: 'Task not found' });
+        }
+    
+        const updatedFields = {};
+        if (req.body.title) {
+          updatedFields.title = req.body.title;
+        }
+        if (req.body.description) {
+          updatedFields.description = req.body.description;
+        }
+        // Add more fields to update as needed
+    
+        // Update the existing task with the collected data
+        const result = await TaskCollection.updateOne(filter, { $set: updatedFields });
+    
+        res.send({ message: 'Task updated successfully', result });
+      } catch (err) {
+        res.status(500).send({ error: err.message });
+      }
     });
 
     app.post('/tasks', async (req, res) => {
@@ -128,34 +153,6 @@ async function run() {
           else {res.status(404).json({ message: 'Task not found' });}
       } catch (error) {console.error('Error deleting task:', error);res.status(500).json({ message: 'Internal server error' });}
     });
-
-    app.get('/tasks', async (req, res) => {
-      const email = req.query.email;
-      const query = { email: email };
-      const result = await TaskCollection.find(query).toArray();
-      res.send(result);
-    });
-
-
-    
-    
-    
-
-
-
-
-
-
-    app.delete('/users/:id', async (req, res) => {
-      const id = req.params.id;
-      const query = { _id: new ObjectId(id) }
-      const result = await userCollection.deleteOne(query);
-      res.send(result);
-    })
-
-
-
-
 
 
     await client.db("admin").command({ ping: 1 });
